@@ -1,7 +1,17 @@
-from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
 from flask_cors import CORS
-import hashlib
+from models import db
+
+# import models
+
+# import blueprints
+from routes.home_routes import home_bp
+from routes.issue_routes import issue_bp
+from routes.verify_routes import verify_bp
+from routes.certificates_routes import certificates_bp
+from routes.history_routes import history_bp
+from routes.dashboard_routes import dashboard_bp
+
 
 app = Flask(__name__)
 CORS(app)
@@ -9,60 +19,19 @@ CORS(app)
 
 # sqllite url
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///certificates.db"
-db = SQLAlchemy(app)
+db.init_app(app)
 
-
-# sqlite config
-class Certificate(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(200))
-    file_hash = db.Column(db.String(200), unique=True)
+# register routes
+app.register_blueprint(home_bp)
+app.register_blueprint(issue_bp)
+app.register_blueprint(verify_bp)
+app.register_blueprint(certificates_bp)
+app.register_blueprint(history_bp)
+app.register_blueprint(dashboard_bp)
 
 
 with app.app_context():
     db.create_all()
-
-
-# first page api
-@app.route("/")
-def home():
-    return "Backend Running"
-
-
-# file issue api - used by universities
-@app.route("/issue", methods=["POST"])
-def issue_certificate():
-    file = request.files["file"]
-    file_bytes = file.read()
-    file_hash = hashlib.sha256(file_bytes).hexdigest()
-
-    existing = Certificate.query.filter_by(file_hash=file_hash).first()
-    if existing:
-        return {"message": "Certificate already exists", "hash": file_hash}
-    new_certificate = Certificate(filename=file.filename, file_hash=file_hash)
-    db.session.add(new_certificate)
-    db.session.commit()
-
-    return {"message": "Certificate issued successfully", "hash": file_hash}
-
-
-# verify certificate given by users
-@app.route("/verify", methods=["POST"])
-def verify_certificate():
-    file = request.files["file"]
-    file_bytes = file.read()
-    file_hash = hashlib.sha256(file_bytes).hexdigest()
-
-    certificate = Certificate.query.filter_by(file_hash=file_hash).first()
-
-    if certificate:
-        return {
-            "valid": True,
-            "message": "Certificate Verified",
-            "filename": certificate.filename,
-        }
-    return {"valid": False, "message": "Certificate not found"}
-
 
 if __name__ == "__main__":
     app.run(debug=True)

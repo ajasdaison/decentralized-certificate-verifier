@@ -1,13 +1,28 @@
 import { useState } from "react";
-import axios from "axios";
+import { useEffect } from "react";
+import API from "./services/api";
 import ResultCard from "./components/ResultCard";
-import { Upload, ShieldCheck } from "lucide-react";
+import UploadCard from "./components/UploadCard";
+import StatisticsCards from "./components/StatisticsCards";
+import CertificatesTable from "./components/CertificatesTable";
+import SearchBar from "./components/SearchBar";
+import VerificationTable from "./components/VerificationTable";
+import Navbar from "./components/Navbar";
 
 function App() {
+  // Upload + result states
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
-  const [dragActive, setDragActive] = useState(false);
+
+  // Dashboard states
+  const [certificates, setCertificates] = useState([]);
+  const [verificationHistory, setVerificationHistory] = useState([]);
+  const [statistics, setStatistics] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredCertificates = certificates.filter((cert) =>
+    cert.filename.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   const handleIssue = async () => {
     if (!file) {
@@ -23,10 +38,7 @@ function App() {
     try {
       setStatus("loading");
       setMessage("Uploading certificate...");
-      const response = await axios.post(
-        "http://127.0.0.1:5000/issue",
-        formData,
-      );
+      const response = await API.post("/issue", formData);
 
       if (response.data.message === "Certificate already exists") {
         setStatus("success");
@@ -58,10 +70,7 @@ function App() {
     try {
       setStatus("loading");
       setMessage("Verifying certificate...");
-      const response = await axios.post(
-        "http://127.0.0.1:5000/verify",
-        formData,
-      );
+      const response = await API.post("/verify", formData);
 
       if (response.data.valid) {
         setStatus("success");
@@ -77,109 +86,134 @@ function App() {
     }
   };
 
+  const fetchCertificates = async () => {
+    try {
+      const response = await API.get("/certificates");
+      setCertificates(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchVerificationHistory = async () => {
+    try {
+      const response = await API.get("/history");
+      setVerificationHistory(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await API.get("/dashboard");
+      setStatistics(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCertificates();
+    fetchVerificationHistory();
+    fetchStatistics();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-8 md:p-10">
-      <h1 className="text-2xl md:text-4xl font-bold mb-8 text-center">
-        Certificate Verification System
-      </h1>
-      <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-xl mx-auto">
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragActive(false);
+    <div className="min-h-screen bg-gray-100">
+      {/* Navbar */}
+      <Navbar />
 
-            const droppedFile = e.dataTransfer.files[0];
+      {/* Main Dashboard */}
+      <main
+        className="
+      max-w-7xl
+      mx-auto
+      px-4
+      md:px-8
+      py-8
+      space-y-8
+    "
+      >
+        {/* Upload Section */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Upload & Verify
+            </h2>
 
-            if (droppedFile?.type === "application/pdf") {
-              setFile(droppedFile);
-              setMessage("");
-              setStatus("");
-            }
-          }}
-          className={`
-    border-2 border-dashed rounded-xl p-6 mb-4 transition text-center
-    ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"}
-  `}
-        >
-          <label className="cursor-pointer flex flex-col items-center gap-2">
-            <Upload size={40} className="text-gray-500" />
-
-            <span className="text-gray-600">Drag & Drop PDF here</span>
-
-            <span className="text-sm text-gray-400">or click to browse</span>
-
-            <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) => {
-                setFile(e.target.files[0]);
-                setMessage("");
-                setStatus("");
-              }}
-            />
-          </label>
-        </div>
-
-        {file && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 break-all">
-              Selected File: <span className="font-medium">{file.name}</span>
+            <p className="text-gray-500 mt-1">
+              Upload certificates for issuing or verification
             </p>
-
-            <button
-              onClick={() => {
-                setFile(null);
-                setMessage("");
-                setStatus("");
-              }}
-              className="text-red-500 text-sm mt-2 hover:underline"
-            >
-              Remove File
-            </button>
           </div>
-        )}
 
-        <div className="flex flex-col md:flex-row gap-4">
-          <button
-            disabled={!file || status === "loading"}
-            className={`
-    px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition
-    ${
-      !file || status === "loading"
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-blue-500 hover:bg-blue-600 text-white"
-    }
-  `}
-            onClick={handleIssue}
-          >
-            <Upload size={18} />
-            Issue Certificate
-          </button>
+          <UploadCard
+            file={file}
+            setFile={setFile}
+            handleIssue={handleIssue}
+            handleVerify={handleVerify}
+            status={status}
+            setMessage={setMessage}
+            setStatus={setStatus}
+          />
 
-          <button
-            disabled={!file || status === "loading"}
-            className={`
-    px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition
-    ${
-      !file || status === "loading"
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-blue-500 hover:bg-blue-600 text-white"
-    }
-  `}
-            onClick={handleVerify}
+          <ResultCard message={message} status={status} />
+        </section>
+
+        {/* Statistics */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Dashboard Statistics
+            </h2>
+
+            <p className="text-gray-500 mt-1">
+              Overview of certificate activity
+            </p>
+          </div>
+
+          <StatisticsCards statistics={statistics} />
+        </section>
+
+        {/* Certificates */}
+        <section className="space-y-4">
+          <div
+            className="
+          flex
+          flex-col
+          md:flex-row
+          md:items-center
+          md:justify-between
+          gap-4
+        "
           >
-            <ShieldCheck size={18} />
-            Verify Certificate
-          </button>
-        </div>
-        <ResultCard message={message} status={status} />
-      </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Certificates</h2>
+
+              <p className="text-gray-500 mt-1">
+                Search and manage issued certificates
+              </p>
+            </div>
+          </div>
+
+          <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
+          <CertificatesTable certificates={filteredCertificates} />
+        </section>
+
+        {/* Verification History */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Verification History
+            </h2>
+
+            <p className="text-gray-500 mt-1">Recent verification activity</p>
+          </div>
+
+          <VerificationTable verificationHistory={verificationHistory} />
+        </section>
+      </main>
     </div>
   );
 }

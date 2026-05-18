@@ -7,12 +7,13 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    ignores: ["dist"],
+    ignores: ["dist/**", "build/**", "node_modules/**", "env/**", "venv/**"],
   },
 
+  // Base JavaScript rules
   js.configs.recommended,
 
-  // React recommended rules FIRST
+  // React recommended rules
   reactPlugin.configs.flat.recommended,
 
   {
@@ -40,20 +41,25 @@ export default defineConfig([
     },
 
     rules: {
+      // React Hooks recommended rules FIRST
+      ...reactHooks.configs.recommended.rules,
+
       // React 17+ JSX transform
       "react/react-in-jsx-scope": "off",
       "react/jsx-uses-react": "off",
 
-      // Disable prop-types for now
+      // Disable prop-types for smaller JS projects
       "react/prop-types": "off",
 
-      // Hooks rules
-      ...reactHooks.configs.recommended.rules,
+      // Async fetching inside useEffect is valid
+      "react-hooks/set-state-in-effect": "off",
 
       // Vite Fast Refresh
       "react-refresh/only-export-components": [
         "warn",
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+        },
       ],
     },
   },
