@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 
-function Navbar() {
+function Navbar({ logout /*user*/ }) {
   return (
     <nav
       className="
@@ -58,19 +58,20 @@ function Navbar() {
           gap-3
         "
         >
-          <span
+          <button
+            onClick={logout}
             className="
-            bg-green-100
-            text-green-700
-            px-3
-            py-1
-            rounded-full
-            text-sm
-            font-medium
-          "
+    bg-red-500
+    hover:bg-red-600
+    text-white
+    px-4
+    py-2
+    rounded-lg
+    transition
+  "
           >
-            System Online
-          </span>
+            Logout
+          </button>
         </div>
       </div>
     </nav>

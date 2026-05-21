@@ -8,6 +8,7 @@ import CertificatesTable from "./components/CertificatesTable";
 import SearchBar from "./components/SearchBar";
 import VerificationTable from "./components/VerificationTable";
 import Navbar from "./components/Navbar";
+import AuthForm from "./components/AuthForm";
 
 function App() {
   // Upload + result states
@@ -23,6 +24,11 @@ function App() {
   const filteredCertificates = certificates.filter((cert) =>
     cert.filename.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  //login
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+
+  const [user, setUser] = useState(null);
 
   const handleIssue = async () => {
     if (!file) {
@@ -113,16 +119,58 @@ function App() {
     }
   };
 
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await API.post("/login", credentials);
+
+      const token = response.data.access_token;
+
+      localStorage.setItem("token", token);
+
+      setToken(token);
+
+      setUser(response.data.user);
+    } catch (error) {
+      console.error(error);
+
+      alert("Invalid credentials");
+    }
+  };
+
+  const handleRegister = async (data) => {
+    try {
+      await API.post("/register", data);
+
+      alert("Registration successful");
+    } catch (error) {
+      console.error(error);
+
+      alert("Registration failed");
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setToken("");
+    setUser(null);
+  };
+
   useEffect(() => {
     fetchCertificates();
     fetchVerificationHistory();
     fetchStatistics();
   }, []);
 
+  if (!token) {
+    return <AuthForm onLogin={handleLogin} onRegister={handleRegister} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navbar */}
-      <Navbar />
+      <Navbar logout={logout} /*user={user}*/ />
 
       {/* Main Dashboard */}
       <main
@@ -148,6 +196,7 @@ function App() {
           </div>
 
           <UploadCard
+            user={user}
             file={file}
             setFile={setFile}
             handleIssue={handleIssue}

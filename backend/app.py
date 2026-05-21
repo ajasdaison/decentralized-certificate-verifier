@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from models import db
+from flask_jwt_extended import JWTManager
 
 # import models
 
@@ -11,11 +12,16 @@ from routes.verify_routes import verify_bp
 from routes.certificates_routes import certificates_bp
 from routes.history_routes import history_bp
 from routes.dashboard_routes import dashboard_bp
+from routes.register_routes import register_bp
+from routes.login_routes import login_bp
 
 
 app = Flask(__name__)
 CORS(app)
 
+# password
+app.config["JWT_SECRET_KEY"] = "super-secret-key"
+jwt = JWTManager(app)
 
 # sqllite url
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///certificates.db"
@@ -28,6 +34,8 @@ app.register_blueprint(verify_bp)
 app.register_blueprint(certificates_bp)
 app.register_blueprint(history_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(register_bp)
+app.register_blueprint(login_bp)
 
 
 with app.app_context():

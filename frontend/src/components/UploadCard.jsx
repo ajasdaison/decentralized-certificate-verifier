@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Upload, ShieldCheck } from "lucide-react";
 
 function UploadCard({
+  user,
   file,
   setFile,
   handleIssue,
@@ -81,9 +82,10 @@ function UploadCard({
       )}
 
       <div className="flex flex-col md:flex-row gap-4">
-        <button
-          disabled={!file || status === "loading"}
-          className={`
+        {user?.role === "issuer" && (
+          <button
+            disabled={!file || status === "loading"}
+            className={`
             px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition
             ${
               !file || status === "loading"
@@ -91,11 +93,12 @@ function UploadCard({
                 : "bg-blue-500 hover:bg-blue-600 text-white"
             }
           `}
-          onClick={handleIssue}
-        >
-          <Upload size={18} />
-          Issue Certificate
-        </button>
+            onClick={handleIssue}
+          >
+            <Upload size={18} />
+            Issue Certificate
+          </button>
+        )}
 
         <button
           disabled={!file || status === "loading"}

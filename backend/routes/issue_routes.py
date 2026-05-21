@@ -1,4 +1,5 @@
 from flask import Blueprint, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db
 from models.certificate import Certificate
 from services.hashing_service import generate_file_hash
@@ -7,7 +8,13 @@ issue_bp = Blueprint("issue", __name__)
 
 
 @issue_bp.route("/issue", methods=["POST"])
+@jwt_required()
 def issue_certificate():
+    current_user = get_jwt_identity()
+
+    if current_user["role"] != "issuer":
+        return {"message": "Unauthorized"}, 403
+
     file = request.files["file"]
 
     file_bytes = file.read()
